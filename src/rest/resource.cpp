@@ -31,6 +31,7 @@
 #include "rest/resource.hpp"
 #include <openthread/commissioner.h>
 #include <openthread/srp_server.h>
+#include <openthread/srp_client.h>
 
 #define OT_PSKC_MAX_LENGTH 16
 #define OT_EXTENDED_PANID_LENGTH 8
@@ -51,6 +52,7 @@
 #define OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE "/node/commissioner/state"
 #define OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER "/node/commissioner/joiner"
 #define OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE "/node/srp/server/state"
+#define OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE "/node/srp/client/state"
 #define OT_REST_RESOURCE_PATH_NETWORK "/networks"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT "/networks/current"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT_COMMISSION "/networks/commission"
@@ -152,6 +154,7 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER, &Resource::CommissionerJoiner);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
+    mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE, &Resource::SrpClientState);
 
     // Resource callback handler
     mResourceCallbackMap.emplace(OT_REST_RESOURCE_PATH_DIAGNOSTICS, &Resource::HandleDiagnosticCallback);
@@ -1139,6 +1142,74 @@ exit:
     }
 }
 
+void Resource::SrpClientState(const Request &aRequest, Response &aResponse) const
+{
+    std::string errorCode;
+
+    switch (aRequest.GetMethod())
+    {
+    case HttpMethod::kGet:
+        GetSrpClientState(aResponse);
+        break;
+    case HttpMethod::kPut:
+        SetSrpClientState(aRequest, aResponse);
+        break;
+    case HttpMethod::kOptions:
+        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+        aResponse.SetResponsCode(errorCode);
+        aResponse.SetComplete();
+        break;
+    default:
+        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+        break;
+    }
+}
+
+void Resource::GetSrpClientState(Response &aResponse) const 
+{
+    std::string  state;
+    std::string  errorCode;
+
+    state = Json::String2JsonString(otSrpClientIsRunning(mInstance) ? "enabled" : "disabled");
+    aResponse.SetBody(state);
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+}
+
+void Resource::SetSrpClientState(const Request &aRequest, Response &aResponse) const 
+{
+    otbrError   error = OTBR_ERROR_NONE;
+    std::string errorCode;
+    std::string body;
+
+    VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
+    if (body == "autostart") {
+        otSrpClientEnableAutoStartMode(mInstance, NULL, NULL);
+    }
+    else if (body == "disable")
+    {
+        otSrpClientDisableAutoStartMode(mInstance);
+        otSrpClientStop(mInstance);
+    }
+    else
+    {
+        ExitNow(error = OTBR_ERROR_INVALID_ARGS);
+    }
+
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+exit:
+    if (error == OTBR_ERROR_INVALID_ARGS)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+}
+
 void Resource::DeleteOutDatedDiagnostic(void)
 {
     auto eraseIt = mDiagSet.begin();
@@ -1157,6 +1228,7 @@ void Resource::DeleteOutDatedDiagnostic(void)
         }
     }
 }
+
 
 void Resource::UpdateDiag(std::string aKey, std::vector<otNetworkDiagTlv> &aDiag)
 {

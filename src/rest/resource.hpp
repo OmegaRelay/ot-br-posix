@@ -136,6 +136,7 @@ private:
     void CommissionerState(const Request &aRequest, Response &aResponse) const;
     void CommissionerJoiner(const Request &aRequest, Response &aResponse) const;
     void SrpServerState(const Request &aRequest, Response &aResponse) const;
+    void SrpClientState(const Request &aRequest, Response &aResponse) const;
     void Diagnostic(const Request &aRequest, Response &aResponse) const;
     void HandleDiagnosticCallback(const Request &aRequest, Response &aResponse);
 
@@ -160,6 +161,8 @@ private:
     void RemoveJoiner(const Request &aRequest, Response &aResponse) const;
     void GetSrpServerState(Response &aResponse) const;
     void SetSrpServerState(const Request &aRequest, Response &aResponse) const;
+    void GetSrpClientState(Response &aResponse) const;
+    void SetSrpClientState(const Request &aRequest, Response &aResponse) const;
 
     void DeleteOutDatedDiagnostic(void);
     void UpdateDiag(std::string aKey, std::vector<otNetworkDiagTlv> &aDiag);

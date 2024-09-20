@@ -424,6 +424,41 @@ paths:
               type: string
               description: Can be "enable" or "disable".
               example: "enable"
+  /node/srp/client/state:
+    get:
+      tags:
+        - node
+      summary: Get current SRP client state.
+      description: |-
+        State describing the current state of the srp client.
+        - disabled: The SRP client is disabled.
+        - enabled: the SRP client is running.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Current state
+                example: "enabled"
+    put:
+      tags:
+        - node
+      summary: Set current SRP client state.
+      description: |-
+        Enable the SRP client autostart or disable the client completely
+      responses:
+        "200":
+          description: Successful operation.
+      requestBody:
+        description: New SRP client state
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Can be "autostart" or "disable".
+              example: "autostart"
 
 components:
   schemas:
