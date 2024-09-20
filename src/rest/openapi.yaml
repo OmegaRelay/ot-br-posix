@@ -412,8 +412,7 @@ paths:
         - node
       summary: Set current SRP server state.
       description: |-
-        Enable and disable the Thread protocol operation. If network interface
-        hasn't been started yet, it will get started automatically.
+        Enable or disable the SRP server operation
       responses:
         "200":
           description: Successful operation.
