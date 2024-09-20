@@ -389,6 +389,42 @@ paths:
           description: Invalid request body.
         "409":
           description: request rejected because commissioner is not active.
+  /node/srp/server/state:
+    get:
+      tags:
+        - node
+      summary: Get current SRP server state.
+      description: |-
+        State describing the current state of the srp server.
+        - disabled: The SRP server is disabled.
+        - running: the SRP server is running
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Current state
+                example: "running"
+    put:
+      tags:
+        - node
+      summary: Set current SRP server state.
+      description: |-
+        Enable and disable the Thread protocol operation. If network interface
+        hasn't been started yet, it will get started automatically.
+      responses:
+        "200":
+          description: Successful operation.
+      requestBody:
+        description: New SRP server state
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Can be "enable" or "disable".
+              example: "enable"
 
 components:
   schemas:

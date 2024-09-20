@@ -95,3 +95,23 @@ std::string GetCommissionerStateName(otCommissionerState aState)
 
     return stateName;
 }
+
+std::string GetSrpServerStateName(otSrpServerState aState)
+{
+    std::string stateName;
+
+    switch (aState)
+    {
+    case OT_SRP_SERVER_STATE_DISABLED:
+        stateName = OTBR_SRP_SERVER_STATE_NAME_DISABLED;
+        break;
+    case OT_SRP_SERVER_STATE_RUNNING:
+        stateName = OTBR_SRP_SERVER_STATE_NAME_RUNNING;
+        break;
+    case OT_SRP_SERVER_STATE_STOPPED:
+        stateName = OTBR_SRP_SERVER_STATE_NAME_STOPPED;
+        break;
+    }
+
+    return stateName;
+}

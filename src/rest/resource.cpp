@@ -30,6 +30,7 @@
 
 #include "rest/resource.hpp"
 #include <openthread/commissioner.h>
+#include <openthread/srp_server.h>
 
 #define OT_PSKC_MAX_LENGTH 16
 #define OT_EXTENDED_PANID_LENGTH 8
@@ -49,6 +50,7 @@
 #define OT_REST_RESOURCE_PATH_NODE_DATASET_PENDING "/node/dataset/pending"
 #define OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE "/node/commissioner/state"
 #define OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER "/node/commissioner/joiner"
+#define OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE "/node/srp/server/state"
 #define OT_REST_RESOURCE_PATH_NETWORK "/networks"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT "/networks/current"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT_COMMISSION "/networks/commission"
@@ -148,6 +150,8 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_DATASET_PENDING, &Resource::DatasetPending);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER, &Resource::CommissionerJoiner);
+    mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
+    mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
 
     // Resource callback handler
     mResourceCallbackMap.emplace(OT_REST_RESOURCE_PATH_DIAGNOSTICS, &Resource::HandleDiagnosticCallback);
@@ -1059,6 +1063,79 @@ void Resource::CommissionerJoiner(const Request &aRequest, Response &aResponse) 
     default:
         ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
         break;
+    }
+}
+
+void Resource::SrpServerState(const Request &aRequest, Response &aResponse) const
+{
+    std::string errorCode;
+
+    switch (aRequest.GetMethod())
+    {
+    case HttpMethod::kGet:
+        GetSrpServerState(aResponse);
+        break;
+    case HttpMethod::kPut:
+        SetSrpServerState(aRequest, aResponse);
+        break;
+    case HttpMethod::kOptions:
+        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+        aResponse.SetResponsCode(errorCode);
+        aResponse.SetComplete();
+        break;
+    default:
+        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+        break;
+    }
+}
+
+void Resource::GetSrpServerState(Response &aResponse) const 
+{
+    std::string  state;
+    std::string  errorCode;
+    otSrpServerState stateCode;
+
+    stateCode = otSrpServerGetState(mInstance);
+    state = Json::String2JsonString(GetSrpServerStateName(stateCode));
+    aResponse.SetBody(state);
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+}
+
+void Resource::SetSrpServerState(const Request &aRequest, Response &aResponse) const 
+{
+    otbrError   error = OTBR_ERROR_NONE;
+    std::string errorCode;
+    std::string body;
+    bool enable;
+
+    VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
+    if (body == "enable")
+    {
+        enable = true;
+    }
+    else if (body == "disable")
+    {
+        enable = false;
+    }
+    else
+    {
+        ExitNow(error = OTBR_ERROR_INVALID_ARGS);
+    }
+
+    otSrpServerSetEnabled(mInstance, enable);
+
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+exit:
+    if (error == OTBR_ERROR_INVALID_ARGS)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
     }
 }
 
