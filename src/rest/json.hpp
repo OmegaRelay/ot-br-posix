@@ -39,6 +39,8 @@
 #include "openthread/dataset.h"
 #include "openthread/link.h"
 #include "openthread/thread_ftd.h"
+#include "openthread/srp_client.h"
+#include "openthread/srp_client_buffers.h"
 
 #include "rest/types.hpp"
 #include "utils/hex.hpp"
@@ -277,6 +279,12 @@ std::string JoinerInfo2JsonString(const otJoinerInfo &aJoinerInfo);
 bool JsonJoinerInfoString2JoinerInfo(const std::string &aJsonJoinerInfo, otJoinerInfo &aJoinerInfo);
 
 std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable);
+
+bool JsonServiceString2ServiceEntry(const std::string &aJsonService, otSrpClientBuffersServiceEntry *aServiceEntry);
+
+bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string &aServiceName, std::string &aInstanceName);
+
+std::string Services2JsonString(const std::vector<otSrpClientService> &aServices);
 
 }; // namespace Json
 

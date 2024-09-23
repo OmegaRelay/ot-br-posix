@@ -32,6 +32,7 @@
 #include <openthread/commissioner.h>
 #include <openthread/srp_server.h>
 #include <openthread/srp_client.h>
+#include <openthread/srp_client_buffers.h>
 
 #define OT_PSKC_MAX_LENGTH 16
 #define OT_EXTENDED_PANID_LENGTH 8
@@ -53,6 +54,7 @@
 #define OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER "/node/commissioner/joiner"
 #define OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE "/node/srp/server/state"
 #define OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE "/node/srp/client/state"
+#define OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE "/node/srp/client/service"
 #define OT_REST_RESOURCE_PATH_NETWORK "/networks"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT "/networks/current"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT_COMMISSION "/networks/commission"
@@ -151,6 +153,7 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE, &Resource::SrpClientState);
+    mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE, &Resource::SrpClientService);
 
     // Resource callback handler
     mResourceCallbackMap.emplace(OT_REST_RESOURCE_PATH_DIAGNOSTICS, &Resource::HandleDiagnosticCallback);
@@ -1153,6 +1156,131 @@ exit:
     else if (error != OTBR_ERROR_NONE)
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+}
+
+void Resource::GetSrpClientServices(Response &aResponse) const {
+    std::string                     errorCode;
+    const otSrpClientService        *service;
+    std::vector<otSrpClientService> services;
+    std::string                     servicesJson;
+
+    for (service = otSrpClientGetServices(mInstance); service != nullptr; service = service->mNext) {
+        services.push_back(*service);
+    }
+
+    servicesJson = Json::Services2JsonString(services);
+    aResponse.SetBody(servicesJson);
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+}
+
+void Resource::AddSrpClientService(const Request &aRequest, Response &aResponse) const {
+    otbrError                      error = OTBR_ERROR_NONE;
+    std::string                    errorCode;
+    otSrpClientBuffersServiceEntry *entry;
+
+    
+    entry = otSrpClientBuffersAllocateService(mInstance);
+    VerifyOrExit(entry != nullptr, error = OTBR_ERROR_ERRNO);
+    VerifyOrExit(Json::JsonServiceString2ServiceEntry(aRequest.GetBody(), entry),
+        error = OTBR_ERROR_INVALID_ARGS);
+
+    VerifyOrExit(otSrpClientAddService(mInstance, &entry->mService) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
+
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+    entry = nullptr;
+
+exit:
+    if (entry != nullptr)
+    {
+        otSrpClientBuffersFreeService(mInstance, entry);
+    }
+    if (error == OTBR_ERROR_INVALID_STATE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusConflict);
+    }
+    else if (error == OTBR_ERROR_INVALID_ARGS)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+}
+
+void Resource::DeleteSrpClientService(const Request &aRequest, Response &aResponse) const {
+    otbrError                      error = OTBR_ERROR_NONE;
+    std::string                    errorCode;
+    std::string                    serviceName;
+    std::string                    instanceName;
+    const otSrpClientService       *service;
+
+
+    
+    VerifyOrExit(Json::JsonServiceString2NameStrings(aRequest.GetBody(), serviceName, instanceName),
+        error = OTBR_ERROR_INVALID_ARGS);
+    
+    for (service = otSrpClientGetServices(mInstance); service != nullptr; service = service->mNext)
+    {
+        if ((instanceName == service->mInstanceName) && (serviceName == service->mName))
+        {
+            VerifyOrExit(otSrpClientRemoveService(mInstance, const_cast<otSrpClientService *>(service)) == OT_ERROR_NONE, 
+                error = OTBR_ERROR_INVALID_STATE);
+            break;
+        }
+    }
+
+    VerifyOrExit(service != nullptr, error = OTBR_ERROR_NOT_FOUND);
+
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+exit:
+    if (error == OTBR_ERROR_INVALID_STATE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusConflict);
+    }
+    else if (error == OTBR_ERROR_INVALID_ARGS)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
+    }
+    else if (error == OTBR_ERROR_NOT_FOUND)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusResourceNotFound);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+}
+
+void Resource::SrpClientService(const Request &aRequest, Response &aResponse) const
+{
+    std::string errorCode;
+
+    switch (aRequest.GetMethod())
+    {
+    case HttpMethod::kGet:
+        GetSrpClientServices(aResponse);
+        break;
+    case HttpMethod::kPost:
+        AddSrpClientService(aRequest, aResponse);
+        break;
+    case HttpMethod::kDelete:
+        DeleteSrpClientService(aRequest, aResponse);
+        break;
+    case HttpMethod::kOptions:
+        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+        aResponse.SetResponsCode(errorCode);
+        aResponse.SetComplete();
+        break;
+    default:
+        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+        break;
     }
 }
 

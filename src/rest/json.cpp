@@ -1024,6 +1024,141 @@ std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable
     return Json2String(JoinerTable2Json(aJoinerTable));
 }
 
+cJSON *Service2Json(const otSrpClientService &aService)
+{
+    cJSON *node = cJSON_CreateObject();
+
+    cJSON_AddItemToObject(node, "Name", cJSON_CreateString(aService.mName));
+    cJSON_AddItemToObject(node, "InstanceName", cJSON_CreateString(aService.mInstanceName));
+    cJSON_AddItemToObject(node, "Port", cJSON_CreateNumber(aService.mPort));
+    cJSON_AddItemToObject(node, "Priority", cJSON_CreateNumber(aService.mPriority));
+    cJSON_AddItemToObject(node, "Weight", cJSON_CreateNumber(aService.mWeight));
+    cJSON_AddItemToObject(node, "NumTxtEntries", cJSON_CreateNumber(aService.mNumTxtEntries));
+    cJSON_AddItemToObject(node, "State", cJSON_CreateNumber(aService.mState));
+    cJSON_AddItemToObject(node, "Data", cJSON_CreateNumber(aService.mData));
+    cJSON_AddItemToObject(node, "Lease", cJSON_CreateNumber(aService.mLease));
+    cJSON_AddItemToObject(node, "KeyLease", cJSON_CreateNumber(aService.mKeyLease));
+
+    return node;
+}
+
+bool JsonService2Service(const cJSON *aJsonService, otSrpClientBuffersServiceEntry *aServiceEntry)
+{
+    cJSON      *value;
+    bool        ret = true;
+    uint16_t    size;
+    char       *string;
+
+    value = cJSON_GetObjectItemCaseSensitive(aJsonService, "Name");
+    if (cJSON_IsString(value))
+    {
+        VerifyOrExit(value->valuestring != nullptr, ret = false);
+        VerifyOrExit(strlen(value->valuestring) <= OT_DNS_MAX_NAME_SIZE, ret = false);
+        string = otSrpClientBuffersGetServiceEntryServiceNameString(aServiceEntry, &size);
+        strncpy(string, value->valuestring, size);
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+    value = cJSON_GetObjectItemCaseSensitive(aJsonService, "InstanceName");
+    if (cJSON_IsString(value))
+    {
+        VerifyOrExit(value->valuestring != nullptr, ret = false);
+        VerifyOrExit(strlen(value->valuestring) <= OT_DNS_MAX_NAME_SIZE, ret = false);
+        string = otSrpClientBuffersGetServiceEntryInstanceNameString(aServiceEntry, &size);
+        strncpy(string, value->valuestring, size);
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+    value = cJSON_GetObjectItemCaseSensitive(aJsonService, "Port");
+    if (cJSON_IsNumber(value))
+    {
+        aServiceEntry->mService.mPort = value->valueint;
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+exit:
+    return ret;
+}
+
+bool JsonServiceString2ServiceEntry(const std::string &aJsonService, otSrpClientBuffersServiceEntry *aServiceEntry)
+{
+    cJSON *jsonService;
+    bool   ret = true;
+
+    VerifyOrExit((jsonService = cJSON_Parse(aJsonService.c_str())) != nullptr, ret = false);
+    VerifyOrExit(cJSON_IsObject(jsonService), ret = false);
+
+    ret = JsonService2Service(jsonService, aServiceEntry);
+
+exit:
+    cJSON_Delete(jsonService);
+
+    return ret;
+}
+
+bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string &aServiceName, std::string &aInstanceName) 
+{
+    cJSON *jsonService;
+    bool   ret = true;
+    cJSON      *value;
+
+    VerifyOrExit((jsonService = cJSON_Parse(aJsonService.c_str())) != nullptr, ret = false);
+    VerifyOrExit(cJSON_IsObject(jsonService), ret = false);
+
+    value = cJSON_GetObjectItemCaseSensitive(jsonService, "Name");
+    if (cJSON_IsString(value))
+    {
+        VerifyOrExit(value->valuestring != nullptr, ret = false);
+        VerifyOrExit(strlen(value->valuestring) <= OT_DNS_MAX_NAME_SIZE, ret = false);
+        aServiceName = value->valuestring;
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+    value = cJSON_GetObjectItemCaseSensitive(jsonService, "InstanceName");
+    if (cJSON_IsString(value))
+    {
+        VerifyOrExit(value->valuestring != nullptr, ret = false);
+        VerifyOrExit(strlen(value->valuestring) <= OT_DNS_MAX_NAME_SIZE, ret = false);
+        aInstanceName = value->valuestring;
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+
+exit:
+    cJSON_Delete(jsonService);
+
+    return ret;
+}
+
+cJSON *Services2Json(const std::vector<otSrpClientService> &aServices) {
+    cJSON *list = cJSON_CreateArray();
+    for (const otSrpClientService service : aServices) {
+        cJSON *serviceJson = Service2Json(service);
+        cJSON_AddItemToArray(list, serviceJson);
+    }
+
+    return list;
+}
+
+std::string Services2JsonString(const std::vector<otSrpClientService> &aServices) {
+    return Json2String(Services2Json(aServices));
+}
+
 } // namespace Json
 } // namespace rest
 } // namespace otbr
