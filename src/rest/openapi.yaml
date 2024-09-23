@@ -459,6 +459,47 @@ paths:
               type: string
               description: Can be "autostart" or "disable".
               example: "autostart"
+  /node/srp/client/service:
+    get:
+      tags:
+        - node
+      summary: Get the SRP client's registered services.
+      description: ""
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags:
+        - node
+      summary: Add a new service to the SRP client.
+      description: ""
+      responses:
+        "200":
+          description: Successful operation
+      requestBody:
+        description: New SRP service to register must include Name, InstanceName and Port
+        content:
+          application/json:
+            schema:
+              type: object
+    delete:
+      tags:
+        - node
+      summary: Find and delete a service from the SRP client.
+      description: ""
+      responses:
+        "200":
+          description: Successful operation
+      requestBody:
+        description: New SRP service to remove must include Name and InstanceName
+        content:
+          application/json:
+            schema:
+              type: object
 
 components:
   schemas:
