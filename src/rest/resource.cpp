@@ -54,6 +54,7 @@
 #define OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER "/node/commissioner/joiner"
 #define OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE "/node/srp/server/state"
 #define OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE "/node/srp/client/state"
+#define OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_HOST "/node/srp/client/host"
 #define OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE "/node/srp/client/service"
 #define OT_REST_RESOURCE_PATH_NETWORK "/networks"
 #define OT_REST_RESOURCE_PATH_NETWORK_CURRENT "/networks/current"
@@ -153,6 +154,7 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE, &Resource::SrpClientState);
+    mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_HOST, &Resource::SrpClientHost);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE, &Resource::SrpClientService);
 
     // Resource callback handler
@@ -1159,7 +1161,115 @@ exit:
     }
 }
 
-void Resource::GetSrpClientServices(Response &aResponse) const {
+void Resource::GetSrpClientHost(Response &aResponse) const 
+{
+    OTBR_UNUSED_VARIABLE(aResponse);
+}
+
+void Resource::SetSrpClientHost(const Request &aRequest, Response &aResponse) const 
+{
+    otbrError     error = OTBR_ERROR_NONE;
+    std::string   errorCode;
+    std::string   name;
+    std::string   address;
+    uint16_t      len;
+    uint16_t      size;
+    char         *hostName;
+    otIp6Address  hostAddress;
+    otIp6Address *hostAddressArray;
+    uint8_t       arrayLength;
+
+    VerifyOrExit(Json::jsonHostString2Strings(aRequest.GetBody(), name, address),
+        error = OTBR_ERROR_INVALID_ARGS);
+
+    hostName = otSrpClientBuffersGetHostNameString(mInstance, &size);
+
+    len = name.length();
+    VerifyOrExit(len + 1 <= size, error = OTBR_ERROR_INVALID_ARGS);
+
+    
+    if (address == "auto") {
+        VerifyOrExit(otSrpClientEnableAutoHostAddress(mInstance) == OT_ERROR_NONE, 
+            error = OTBR_ERROR_INVALID_STATE);
+    } else {
+        hostAddressArray = otSrpClientBuffersGetHostAddressesArray(mInstance, &arrayLength);
+        VerifyOrExit(otIp6AddressFromString(address.c_str(), &hostAddress) == OT_ERROR_NONE, 
+            error = OTBR_ERROR_INVALID_ARGS);
+        VerifyOrExit(otSrpClientSetHostAddresses(mInstance, &hostAddress, 1) == OT_ERROR_NONE, 
+            error = OTBR_ERROR_INVALID_STATE);
+
+        memcpy(hostAddressArray, &hostAddress, 1 * sizeof(hostAddressArray[0]));
+        otSrpClientSetHostAddresses(mInstance, hostAddressArray, 1);
+    }
+
+
+    // We first make sure we can set the name, and if so
+    // we copy it to the persisted string buffer and set
+    // the host name again now with the persisted buffer.
+    // This ensures that we do not overwrite a previous
+    // buffer with a host name that cannot be set.
+    VerifyOrExit(otSrpClientSetHostName(mInstance, name.c_str()) == OT_ERROR_NONE,
+        error = OTBR_ERROR_INVALID_STATE);
+    memcpy(hostName, name.c_str(), len + 1);
+    otSrpClientSetHostName(mInstance, hostName);
+
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+exit:
+    if (error == OTBR_ERROR_INVALID_STATE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusConflict);
+    }
+    else if (error == OTBR_ERROR_INVALID_ARGS)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
+    }
+    else if (error == OTBR_ERROR_NOT_IMPLEMENTED)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+
+}
+
+void Resource::DeleteSrpClientHost(const Request &aRequest, Response &aResponse) const 
+{
+    OTBR_UNUSED_VARIABLE(aResponse);
+    OTBR_UNUSED_VARIABLE(aRequest);
+}
+
+void Resource::SrpClientHost(const Request &aRequest, Response &aResponse) const 
+{
+    std::string errorCode;
+
+    switch (aRequest.GetMethod())
+    {
+    case HttpMethod::kGet:
+        GetSrpClientHost(aResponse);
+        break;
+    case HttpMethod::kPut:
+        SetSrpClientHost(aRequest, aResponse);
+        break;
+    case HttpMethod::kDelete:
+        DeleteSrpClientHost(aRequest, aResponse);
+        break;
+    case HttpMethod::kOptions:
+        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+        aResponse.SetResponsCode(errorCode);
+        aResponse.SetComplete();
+        break;
+    default:
+        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+        break;
+    }
+}
+
+void Resource::GetSrpClientServices(Response &aResponse) const 
+{
     std::string                     errorCode;
     const otSrpClientService        *service;
     std::vector<otSrpClientService> services;
@@ -1175,7 +1285,8 @@ void Resource::GetSrpClientServices(Response &aResponse) const {
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::AddSrpClientService(const Request &aRequest, Response &aResponse) const {
+void Resource::AddSrpClientService(const Request &aRequest, Response &aResponse) const 
+{
     otbrError                      error = OTBR_ERROR_NONE;
     std::string                    errorCode;
     otSrpClientBuffersServiceEntry *entry;
@@ -1212,7 +1323,8 @@ exit:
     }
 }
 
-void Resource::DeleteSrpClientService(const Request &aRequest, Response &aResponse) const {
+void Resource::DeleteSrpClientService(const Request &aRequest, Response &aResponse) const 
+{
     otbrError                      error = OTBR_ERROR_NONE;
     std::string                    errorCode;
     std::string                    serviceName;

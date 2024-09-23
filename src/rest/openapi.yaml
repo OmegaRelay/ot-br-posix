@@ -449,6 +449,41 @@ paths:
               type: string
               description: Can be "autostart" or "disable".
               example: "autostart"
+  /node/srp/client/host:
+    get:
+      tags:
+        - node
+        - srp
+      summary: get the SRP client host information
+      responses:
+        "200":
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+    put:
+      tags:
+        - node
+        - srp
+      summary: set the SRP client host information
+      responses:
+        "200":
+          description: Successful operation.
+      requestBody:
+        description: New srp host information
+        content:
+          application/json:
+            schema:
+              type: object
+    delete:
+      tags:
+        - node
+        - srp
+      summary: delete the SRP client host information
+      responses:
+        "200":
+          description: Successful operation.
   /node/srp/client/service:
     get:
       tags:

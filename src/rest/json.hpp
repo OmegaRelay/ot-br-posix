@@ -280,6 +280,8 @@ bool JsonJoinerInfoString2JoinerInfo(const std::string &aJsonJoinerInfo, otJoine
 
 std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable);
 
+bool jsonHostString2Strings(const std::string &aJsonHost, std::string &aHostName, std::string &aHostAddress);
+
 bool JsonServiceString2ServiceEntry(const std::string &aJsonService, otSrpClientBuffersServiceEntry *aServiceEntry);
 
 bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string &aServiceName, std::string &aInstanceName);
