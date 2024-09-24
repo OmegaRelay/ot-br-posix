@@ -1074,29 +1074,6 @@ void Resource::CommissionerJoiner(const Request &aRequest, Response &aResponse) 
     }
 }
 
-void Resource::SrpServerState(const Request &aRequest, Response &aResponse) const
-{
-    std::string errorCode;
-
-    switch (aRequest.GetMethod())
-    {
-    case HttpMethod::kGet:
-        GetSrpServerState(aResponse);
-        break;
-    case HttpMethod::kPut:
-        SetSrpServerState(aRequest, aResponse);
-        break;
-    case HttpMethod::kOptions:
-        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
-        aResponse.SetResponsCode(errorCode);
-        aResponse.SetComplete();
-        break;
-    default:
-        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
-        break;
-    }
-}
-
 void Resource::GetSrpServerState(Response &aResponse) const 
 {
     std::string  state;
@@ -1147,17 +1124,17 @@ exit:
     }
 }
 
-void Resource::SrpClientState(const Request &aRequest, Response &aResponse) const
+void Resource::SrpServerState(const Request &aRequest, Response &aResponse) const
 {
     std::string errorCode;
 
     switch (aRequest.GetMethod())
     {
     case HttpMethod::kGet:
-        GetSrpClientState(aResponse);
+        GetSrpServerState(aResponse);
         break;
     case HttpMethod::kPut:
-        SetSrpClientState(aRequest, aResponse);
+        SetSrpServerState(aRequest, aResponse);
         break;
     case HttpMethod::kOptions:
         errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
@@ -1212,6 +1189,30 @@ exit:
     else if (error != OTBR_ERROR_NONE)
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+}
+
+
+void Resource::SrpClientState(const Request &aRequest, Response &aResponse) const
+{
+    std::string errorCode;
+
+    switch (aRequest.GetMethod())
+    {
+    case HttpMethod::kGet:
+        GetSrpClientState(aResponse);
+        break;
+    case HttpMethod::kPut:
+        SetSrpClientState(aRequest, aResponse);
+        break;
+    case HttpMethod::kOptions:
+        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+        aResponse.SetResponsCode(errorCode);
+        aResponse.SetComplete();
+        break;
+    default:
+        ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+        break;
     }
 }
 
