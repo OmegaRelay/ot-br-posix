@@ -167,7 +167,7 @@ private:
     void SetSrpClientState(const Request &aRequest, Response &aResponse) const;
     void GetSrpClientHost(Response &aResponse) const;
     void SetSrpClientHost(const Request &aRequest, Response &aResponse) const;
-    void DeleteSrpClientHost(const Request &aRequest, Response &aResponse) const;
+    void DeleteSrpClientHost(Response &aResponse) const;
     void GetSrpClientServices(Response &aResponse) const;
     void AddSrpClientService(const Request &aRequest, Response &aResponse) const;
     void DeleteSrpClientService(const Request &aRequest, Response &aResponse) const;
