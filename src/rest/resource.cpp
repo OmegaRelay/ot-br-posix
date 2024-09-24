@@ -1164,10 +1164,8 @@ void Resource::SrpClientState(const Request &aRequest, Response &aResponse) cons
 
 void Resource::GetSrpClientHost(Response &aResponse) const 
 {
-
     std::string  state;
     std::string  errorCode;
-
     
     state = Json::HostInfo2JsonString(*otSrpClientGetHostInfo(mInstance));
     aResponse.SetBody(state);
@@ -1242,13 +1240,28 @@ exit:
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
     }
-
 }
 
-void Resource::DeleteSrpClientHost(const Request &aRequest, Response &aResponse) const 
+void Resource::DeleteSrpClientHost(Response &aResponse) const 
 {
-    OTBR_UNUSED_VARIABLE(aResponse);
-    OTBR_UNUSED_VARIABLE(aRequest);
+    std::string  state;
+    std::string  errorCode;
+    otbrError    error = OTBR_ERROR_NONE;
+    
+    VerifyOrExit(otSrpClientRemoveHostAndServices(mInstance, true, false) == OT_ERROR_NONE, 
+        error = OTBR_ERROR_INVALID_STATE);
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+exit:
+    if (error == OTBR_ERROR_INVALID_STATE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusConflict);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
 }
 
 void Resource::SrpClientHost(const Request &aRequest, Response &aResponse) const 
@@ -1264,7 +1277,7 @@ void Resource::SrpClientHost(const Request &aRequest, Response &aResponse) const
         SetSrpClientHost(aRequest, aResponse);
         break;
     case HttpMethod::kDelete:
-        DeleteSrpClientHost(aRequest, aResponse);
+        DeleteSrpClientHost(aResponse);
         break;
     case HttpMethod::kOptions:
         errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
