@@ -1164,7 +1164,15 @@ void Resource::SrpClientState(const Request &aRequest, Response &aResponse) cons
 
 void Resource::GetSrpClientHost(Response &aResponse) const 
 {
-    OTBR_UNUSED_VARIABLE(aResponse);
+
+    std::string  state;
+    std::string  errorCode;
+
+    
+    state = Json::HostInfo2JsonString(*otSrpClientGetHostInfo(mInstance));
+    aResponse.SetBody(state);
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
 }
 
 void Resource::SetSrpClientHost(const Request &aRequest, Response &aResponse) const 

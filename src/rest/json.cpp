@@ -31,6 +31,7 @@
 
 #include "common/code_utils.hpp"
 #include "common/types.hpp"
+#include "common/api_strings.hpp"
 
 extern "C" {
 #include <cJSON.h>
@@ -1194,7 +1195,8 @@ exit:
     return ret;
 }
 
-cJSON *Services2Json(const std::vector<otSrpClientService> &aServices) {
+cJSON *Services2Json(const std::vector<otSrpClientService> &aServices) 
+{
     cJSON *list = cJSON_CreateArray();
     for (const otSrpClientService service : aServices) {
         cJSON *serviceJson = Service2Json(service);
@@ -1204,8 +1206,37 @@ cJSON *Services2Json(const std::vector<otSrpClientService> &aServices) {
     return list;
 }
 
-std::string Services2JsonString(const std::vector<otSrpClientService> &aServices) {
+std::string Services2JsonString(const std::vector<otSrpClientService> &aServices) 
+{
     return Json2String(Services2Json(aServices));
+}
+
+cJSON *HostInfo2Json(const otSrpClientHostInfo &aHostInfo) 
+{
+    cJSON *node = cJSON_CreateObject();
+
+    if (aHostInfo.mName == NULL) {
+        cJSON_AddItemToObject(node, "Name", cJSON_CreateString(""));
+    } else {
+        cJSON_AddItemToObject(node, "Name", cJSON_CreateString(aHostInfo.mName));
+    }
+    cJSON_AddItemToObject(node, "State", cJSON_CreateString(GetSrpClientItemStateName(aHostInfo.mState).c_str()));
+    
+    cJSON *addressNode = cJSON_CreateArray();
+    for (uint8_t i = 0; i < aHostInfo.mNumAddresses; i++) {
+        char string[OT_IP6_ADDRESS_STRING_SIZE];
+        otIp6AddressToString(&aHostInfo.mAddresses[i], string, OT_IP6_ADDRESS_STRING_SIZE);
+        cJSON_AddItemToArray(addressNode, cJSON_CreateString(string));
+    }
+    cJSON_AddItemToObject(node, "Addresses", addressNode);
+
+    return node;
+}
+
+std::string HostInfo2JsonString(const otSrpClientHostInfo &aHostInfo)
+{
+    return Json2String(HostInfo2Json(aHostInfo));
+
 }
 
 } // namespace Json

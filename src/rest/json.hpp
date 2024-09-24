@@ -288,6 +288,8 @@ bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string 
 
 std::string Services2JsonString(const std::vector<otSrpClientService> &aServices);
 
+std::string HostInfo2JsonString(const otSrpClientHostInfo &aHostInfo);
+
 }; // namespace Json
 
 } // namespace rest

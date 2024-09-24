@@ -42,6 +42,7 @@
 #include <openthread/border_routing.h>
 #include <openthread/thread.h>
 #include <openthread/srp_server.h>
+#include <openthread/srp_client.h>
 
 #define OTBR_ROLE_NAME_DISABLED "disabled"
 #define OTBR_ROLE_NAME_DETACHED "detached"
@@ -63,6 +64,17 @@
 #define OTBR_SRP_SERVER_STATE_NAME_RUNNING "running"
 #define OTBR_SRP_SERVER_STATE_NAME_STOPPED "stopped"
 
+#define OTBR_SRP_CLIENT_ITME_STATE_NAME_DISABLED 
+
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_TO_ADD     "toAdd"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_ADDING     "adding"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_TO_REFRESH "toRefresh"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_REFRESHING "refreshing"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_TO_REMOVE  "toRemove"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_REMOVING   "removing"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_REGISTERED "registered"
+#define OTBR_SRP_CLIENT_ITEM_STATE_NAME_REMOVED    "removed"
+
 std::string GetDeviceRoleName(otDeviceRole aRole);
 
 #if OTBR_ENABLE_DHCP6_PD
@@ -72,5 +84,7 @@ std::string GetDhcp6PdStateName(otBorderRoutingDhcp6PdState aDhcp6PdState);
 std::string GetCommissionerStateName(otCommissionerState aState);
 
 std::string GetSrpServerStateName(otSrpServerState aState);
+
+std::string GetSrpClientItemStateName(otSrpClientItemState aState);
 
 #endif // OTBR_COMMON_API_STRINGS_HPP_
