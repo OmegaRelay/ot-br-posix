@@ -156,7 +156,9 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER, &Resource::CommissionerJoiner);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
+    #if OT_SRP_SERVER // SRP server is not forced on
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
+    #endif // OT_SRP_SERVER
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE, &Resource::SrpClientState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_HOST, &Resource::SrpClientHost);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE, &Resource::SrpClientService);
@@ -1074,6 +1076,7 @@ void Resource::CommissionerJoiner(const Request &aRequest, Response &aResponse) 
     }
 }
 
+#if OT_SRP_SERVER
 void Resource::GetSrpServerState(Response &aResponse) const 
 {
     std::string  state;
@@ -1146,6 +1149,7 @@ void Resource::SrpServerState(const Request &aRequest, Response &aResponse) cons
         break;
     }
 }
+#endif // OT_SRP_SERVER
 
 void Resource::GetSrpClientState(Response &aResponse) const 
 {
