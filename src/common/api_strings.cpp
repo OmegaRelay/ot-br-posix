@@ -95,3 +95,59 @@ std::string GetCommissionerStateName(otCommissionerState aState)
 
     return stateName;
 }
+
+std::string GetSrpServerStateName(otSrpServerState aState)
+{
+    std::string stateName;
+
+    switch (aState)
+    {
+    case OT_SRP_SERVER_STATE_DISABLED:
+        stateName = OTBR_SRP_SERVER_STATE_NAME_DISABLED;
+        break;
+    case OT_SRP_SERVER_STATE_RUNNING:
+        stateName = OTBR_SRP_SERVER_STATE_NAME_RUNNING;
+        break;
+    case OT_SRP_SERVER_STATE_STOPPED:
+        stateName = OTBR_SRP_SERVER_STATE_NAME_STOPPED;
+        break;
+    }
+
+    return stateName;
+}
+
+std::string GetSrpClientItemStateName(otSrpClientItemState aState)
+{
+    std::string stateName;
+
+    switch (aState)
+    {
+    case OT_SRP_CLIENT_ITEM_STATE_TO_ADD:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_TO_ADD;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_ADDING:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_ADDING;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_TO_REFRESH:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_TO_REFRESH;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_REFRESHING:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_REFRESHING;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_TO_REMOVE:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_TO_REMOVE;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_REMOVING:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_REMOVING;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_REGISTERED:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_REGISTERED;
+        break;
+    case OT_SRP_CLIENT_ITEM_STATE_REMOVED:
+        stateName = OTBR_SRP_CLIENT_ITEM_STATE_NAME_REMOVED;
+        break;
+    }
+
+    return stateName;
+
+}

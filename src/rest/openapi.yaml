@@ -393,6 +393,152 @@ paths:
           description: Invalid request body.
         "409":
           description: request rejected because commissioner is not active.
+  /node/srp/server/state:
+    get:
+      tags:
+        - node
+      summary: Get current SRP server state.
+      description: |-
+        State describing the current state of the srp server.
+        - disabled: The SRP server is disabled.
+        - running: the SRP server is running
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Current state
+                example: "running"
+    put:
+      tags:
+        - node
+      summary: Set current SRP server state.
+      description: |-
+        Enable or disable the SRP server operation
+      responses:
+        "200":
+          description: Successful operation.
+      requestBody:
+        description: New SRP server state
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Can be "enable" or "disable".
+              example: "enable"
+  /node/srp/client/state:
+    get:
+      tags:
+        - node
+      summary: Get current SRP client state.
+      description: |-
+        State describing the current state of the srp client.
+        - disabled: The SRP client is disabled.
+        - enabled: the SRP client is running.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Current state
+                example: "enabled"
+    put:
+      tags:
+        - node
+      summary: Set current SRP client state.
+      description: |-
+        Enable the SRP client autostart or disable the client completely
+      responses:
+        "200":
+          description: Successful operation.
+      requestBody:
+        description: New SRP client state
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Can be "autostart" or "disable".
+              example: "autostart"
+  /node/srp/client/host:
+    get:
+      tags:
+        - node
+        - srp
+      summary: get the SRP client host information
+      responses:
+        "200":
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                type: object
+    put:
+      tags:
+        - node
+        - srp
+      summary: set the SRP client host information
+      responses:
+        "200":
+          description: Successful operation.
+      requestBody:
+        description: New srp host information
+        content:
+          application/json:
+            schema:
+              type: object
+    delete:
+      tags:
+        - node
+        - srp
+      summary: delete the SRP client host information
+      responses:
+        "200":
+          description: Successful operation.
+  /node/srp/client/service:
+    get:
+      tags:
+        - node
+      summary: Get the SRP client's registered services.
+      description: ""
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      tags:
+        - node
+      summary: Add a new service to the SRP client.
+      description: ""
+      responses:
+        "200":
+          description: Successful operation
+      requestBody:
+        description: New SRP service to register must include Name, InstanceName and Port
+        content:
+          application/json:
+            schema:
+              type: object
+    delete:
+      tags:
+        - node
+      summary: Find and delete a service from the SRP client.
+      description: ""
+      responses:
+        "200":
+          description: Successful operation
+      requestBody:
+        description: New SRP service to remove must include Name and InstanceName
+        content:
+          application/json:
+            schema:
+              type: object
 
 components:
   schemas:
