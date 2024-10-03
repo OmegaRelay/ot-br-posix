@@ -71,6 +71,7 @@
 #define OT_REST_HTTP_STATUS_408 "408 Request Timeout"
 #define OT_REST_HTTP_STATUS_409 "409 Conflict"
 #define OT_REST_HTTP_STATUS_500 "500 Internal Server Error"
+#define OT_REST_HTTP_STATUS_507 "507 Insufficient Storage"
 
 using std::chrono::duration_cast;
 using std::chrono::microseconds;
@@ -126,6 +127,9 @@ static std::string GetHttpStatus(HttpStatusCode aErrorCode)
         break;
     case HttpStatusCode::kStatusInternalServerError:
         httpStatus = OT_REST_HTTP_STATUS_500;
+        break;
+    case HttpStatusCode::kStatusInsufficientStorage:
+        httpStatus = OT_REST_HTTP_STATUS_507;
         break;
     }
 
@@ -856,20 +860,20 @@ void Resource::IpaddrMleid(const Request &aRequest, Response &aResponse) const
     }
 }
 
-void Resource::GetCommissionerState(Response &aResponse) const 
+void Resource::GetCommissionerState(Response &aResponse) const
 {
-    std::string  state;
-    std::string  errorCode;
+    std::string         state;
+    std::string         errorCode;
     otCommissionerState stateCode;
 
     stateCode = otCommissionerGetState(mInstance);
-    state = Json::String2JsonString(GetCommissionerStateName(stateCode));
+    state     = Json::String2JsonString(GetCommissionerStateName(stateCode));
     aResponse.SetBody(state);
     errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::SetCommissionerState(const Request &aRequest, Response &aResponse) const 
+void Resource::SetCommissionerState(const Request &aRequest, Response &aResponse) const
 {
     otbrError   error = OTBR_ERROR_NONE;
     std::string errorCode;
@@ -878,12 +882,15 @@ void Resource::SetCommissionerState(const Request &aRequest, Response &aResponse
     VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
     if (body == "enable")
     {
-        VerifyOrExit(otCommissionerGetState(mInstance) == OT_COMMISSIONER_STATE_DISABLED);
-        VerifyOrExit(otCommissionerStart(mInstance, NULL, NULL, NULL) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
+        VerifyOrExit(otCommissionerGetState(mInstance) == OT_COMMISSIONER_STATE_DISABLED,
+                     error = OTBR_ERROR_DUPLICATED);
+        VerifyOrExit(otCommissionerStart(mInstance, NULL, NULL, NULL) == OT_ERROR_NONE,
+                     error = OTBR_ERROR_INVALID_STATE);
     }
     else if (body == "disable")
     {
-        VerifyOrExit(otCommissionerGetState(mInstance) != OT_COMMISSIONER_STATE_DISABLED);
+        VerifyOrExit(otCommissionerGetState(mInstance) != OT_COMMISSIONER_STATE_DISABLED,
+                     error = OTBR_ERROR_DUPLICATED);
         VerifyOrExit(otCommissionerStop(mInstance) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
     }
     else
@@ -895,11 +902,15 @@ void Resource::SetCommissionerState(const Request &aRequest, Response &aResponse
     aResponse.SetResponsCode(errorCode);
 
 exit:
-    if (error == OTBR_ERROR_INVALID_STATE)
+    if (error == OTBR_ERROR_DUPLICATED)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusNoContent);
+    }
+    else if (error == OTBR_ERROR_INVALID_STATE)
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusConflict);
     }
-    if (error == OTBR_ERROR_INVALID_ARGS)
+    else if (error == OTBR_ERROR_INVALID_ARGS)
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
     }
@@ -930,18 +941,18 @@ void Resource::CommissionerState(const Request &aRequest, Response &aResponse) c
         ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
         break;
     }
-
 }
 
-void Resource::GetJoiners(Response &aResponse) const 
+void Resource::GetJoiners(Response &aResponse) const
 {
-    uint16_t     iter = 0;
-    otJoinerInfo joinerInfo;
+    uint16_t                  iter = 0;
+    otJoinerInfo              joinerInfo;
     std::vector<otJoinerInfo> joinerTable;
-    std::string joinerJson;
-    std::string  errorCode;
+    std::string               joinerJson;
+    std::string               errorCode;
 
-    while (otCommissionerGetNextJoinerInfo(mInstance, &iter, &joinerInfo) == OT_ERROR_NONE) {
+    while (otCommissionerGetNextJoinerInfo(mInstance, &iter, &joinerInfo) == OT_ERROR_NONE)
+    {
         joinerTable.push_back(joinerInfo);
     }
 
@@ -951,25 +962,37 @@ void Resource::GetJoiners(Response &aResponse) const
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::AddJoiner(const Request &aRequest, Response &aResponse) const 
+void Resource::AddJoiner(const Request &aRequest, Response &aResponse) const
 {
-    otbrError   error = OTBR_ERROR_NONE;
-    std::string errorCode;
-    otJoinerInfo joiner;
-    const otExtAddress *addrPtr = nullptr;
-    const uint8_t emptyArray[OT_EXT_ADDRESS_SIZE] = {0};
+    otbrError           error   = OTBR_ERROR_NONE;
+    otError             otError = OT_ERROR_NONE;
+    std::string         errorCode;
+    otJoinerInfo        joiner;
+    const otExtAddress *addrPtr                         = nullptr;
+    const uint8_t       emptyArray[OT_EXT_ADDRESS_SIZE] = {0};
 
     VerifyOrExit(otCommissionerGetState(mInstance) == OT_COMMISSIONER_STATE_ACTIVE, error = OTBR_ERROR_INVALID_STATE);
 
-    VerifyOrExit(Json::JsonJoinerInfoString2JoinerInfo(aRequest.GetBody(), joiner),
-                    error = OTBR_ERROR_INVALID_ARGS);
+    VerifyOrExit(Json::JsonJoinerInfoString2JoinerInfo(aRequest.GetBody(), joiner), error = OTBR_ERROR_INVALID_ARGS);
 
     addrPtr = &joiner.mSharedId.mEui64;
-    if (memcmp(&joiner.mSharedId.mEui64, emptyArray, OT_EXT_ADDRESS_SIZE) == 0) {
+    if (memcmp(&joiner.mSharedId.mEui64, emptyArray, OT_EXT_ADDRESS_SIZE) == 0)
+    {
         addrPtr = nullptr;
     }
 
-    VerifyOrExit(otCommissionerAddJoiner(mInstance, addrPtr, joiner.mPskd.m8, joiner.mExpirationTime) == OT_ERROR_NONE, error = OTBR_ERROR_OPENTHREAD);
+    if (joiner.mType == OT_JOINER_INFO_TYPE_DISCERNER)
+    {
+        otError = otCommissionerAddJoinerWithDiscerner(mInstance, &joiner.mSharedId.mDiscerner, joiner.mPskd.m8,
+                                                       joiner.mExpirationTime);
+    }
+    else
+    {
+        otError = otCommissionerAddJoiner(mInstance, addrPtr, joiner.mPskd.m8, joiner.mExpirationTime);
+    }
+
+    VerifyOrExit(otError != OT_ERROR_NO_BUFS, error = OTBR_ERROR_OPENTHREAD);
+    VerifyOrExit(otError != OT_ERROR_INVALID_ARGS, error = OTBR_ERROR_INVALID_ARGS);
 
     errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
     aResponse.SetResponsCode(errorCode);
@@ -983,29 +1006,56 @@ exit:
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
     }
+    else if (error == OTBR_ERROR_OPENTHREAD)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInsufficientStorage);
+    }
     else if (error != OTBR_ERROR_NONE)
     {
         ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
     }
 }
 
-void Resource::RemoveJoiner(const Request &aRequest, Response &aResponse) const 
+void Resource::RemoveJoiner(const Request &aRequest, Response &aResponse) const
 {
-    otbrError   error = OTBR_ERROR_NONE;
-    std::string errorCode;
-    otExtAddress eui64;
-    otExtAddress *addrPtr = nullptr;
+    otbrError         error = OTBR_ERROR_NONE;
+    std::string       errorCode;
+    otExtAddress      eui64;
+    otExtAddress     *addrPtr   = nullptr;
+    otJoinerDiscerner discerner = {
+        .mValue  = 0,
+        .mLength = 0,
+    };
     std::string body;
 
     VerifyOrExit(otCommissionerGetState(mInstance) == OT_COMMISSIONER_STATE_ACTIVE, error = OTBR_ERROR_INVALID_STATE);
 
     VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
-    if (body != "*") {
-        VerifyOrExit(Json::Hex2BytesJsonString(body, eui64.m8, OT_EXT_ADDRESS_SIZE), error = OTBR_ERROR_INVALID_ARGS);
-        addrPtr = &eui64;
+    if (body != "*")
+    {
+        error = Json::StringDiscerner2Discerner(const_cast<char *>(body.c_str()), discerner);
+        if (error == OTBR_ERROR_NOT_FOUND)
+        {
+            error = OTBR_ERROR_NONE;
+            VerifyOrExit(Json::Hex2BytesJsonString(body, eui64.m8, OT_EXT_ADDRESS_SIZE) == OT_EXT_ADDRESS_SIZE,
+                         error = OTBR_ERROR_INVALID_ARGS);
+            addrPtr = &eui64;
+        }
+        else if (error != OTBR_ERROR_NONE)
+        {
+            ExitNow(error = OTBR_ERROR_INVALID_ARGS);
+        }
     }
 
-    VerifyOrExit(otCommissionerRemoveJoiner(mInstance, addrPtr) == OT_ERROR_NONE, error = OTBR_ERROR_NOT_FOUND);
+    if (discerner.mLength == 0)
+    {
+        VerifyOrExit(otCommissionerRemoveJoiner(mInstance, addrPtr) == OT_ERROR_NONE, error = OTBR_ERROR_NOT_FOUND);
+    }
+    else
+    {
+        VerifyOrExit(otCommissionerRemoveJoinerWithDiscerner(mInstance, &discerner) == OT_ERROR_NONE,
+                     error = OTBR_ERROR_NOT_FOUND);
+    }
 
     errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
     aResponse.SetResponsCode(errorCode);
@@ -1038,13 +1088,13 @@ void Resource::CommissionerJoiner(const Request &aRequest, Response &aResponse) 
     case HttpMethod::kGet:
         GetJoiners(aResponse);
         break;
-    case HttpMethod::kPut:
+    case HttpMethod::kPost:
         AddJoiner(aRequest, aResponse);
         break;
     case HttpMethod::kDelete:
         RemoveJoiner(aRequest, aResponse);
         break;
-    
+
     case HttpMethod::kOptions:
         errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
         aResponse.SetResponsCode(errorCode);
