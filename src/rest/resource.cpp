@@ -30,7 +30,9 @@
 
 #include "rest/resource.hpp"
 #include <openthread/commissioner.h>
+#if OTBR_ENABLE_SRP_ADVERTISING_PROXY
 #include <openthread/srp_server.h>
+#endif // OTBR_ENABLE_SRP_ADVERTISING_PROXY
 #include <openthread/srp_client.h>
 #include <openthread/srp_client_buffers.h>
 
@@ -158,9 +160,9 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER, &Resource::CommissionerJoiner);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
-    #if OT_SRP_SERVER // SRP server is not forced on
+#ifdef OTBR_ENABLE_SRP_ADVERTISING_PROXY // SRP server is not forced on
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
-    #endif // OT_SRP_SERVER
+#endif // OTBR_ENABLE_SRP_ADVERTISING_PROXY
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE, &Resource::SrpClientState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_HOST, &Resource::SrpClientHost);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE, &Resource::SrpClientService);
@@ -825,10 +827,10 @@ void Resource::DatasetPending(const Request &aRequest, Response &aResponse) cons
     Dataset(DatasetType::kPending, aRequest, aResponse);
 }
 
-void Resource::GetIpaddrMleid(Response &aResponse) const 
+void Resource::GetIpaddrMleid(Response &aResponse) const
 {
-    std::string errorCode;
-    std::string mleidJsonString;
+    std::string         errorCode;
+    std::string         mleidJsonString;
     const otIp6Address *mleid;
 
     mleid = otThreadGetMeshLocalEid(mInstance);
@@ -839,7 +841,7 @@ void Resource::GetIpaddrMleid(Response &aResponse) const
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::IpaddrMleid(const Request &aRequest, Response &aResponse) const 
+void Resource::IpaddrMleid(const Request &aRequest, Response &aResponse) const
 {
     std::string errorCode;
 
@@ -1112,26 +1114,26 @@ void Resource::CommissionerJoiner(const Request &aRequest, Response &aResponse) 
     }
 }
 
-#if OT_SRP_SERVER
-void Resource::GetSrpServerState(Response &aResponse) const 
+#if OTBR_ENABLE_SRP_ADVERTISING_PROXY
+void Resource::GetSrpServerState(Response &aResponse) const
 {
-    std::string  state;
-    std::string  errorCode;
+    std::string      state;
+    std::string      errorCode;
     otSrpServerState stateCode;
 
     stateCode = otSrpServerGetState(mInstance);
-    state = Json::String2JsonString(GetSrpServerStateName(stateCode));
+    state     = Json::String2JsonString(GetSrpServerStateName(stateCode));
     aResponse.SetBody(state);
     errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::SetSrpServerState(const Request &aRequest, Response &aResponse) const 
+void Resource::SetSrpServerState(const Request &aRequest, Response &aResponse) const
 {
     otbrError   error = OTBR_ERROR_NONE;
     std::string errorCode;
     std::string body;
-    bool enable;
+    bool        enable;
 
     VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
     if (body == "enable")
@@ -1185,12 +1187,12 @@ void Resource::SrpServerState(const Request &aRequest, Response &aResponse) cons
         break;
     }
 }
-#endif // OT_SRP_SERVER
+#endif // OTBR_ENABLE_SRP_ADVERTISING_PROXY
 
-void Resource::GetSrpClientState(Response &aResponse) const 
+void Resource::GetSrpClientState(Response &aResponse) const
 {
-    std::string  state;
-    std::string  errorCode;
+    std::string state;
+    std::string errorCode;
 
     state = Json::String2JsonString(otSrpClientIsRunning(mInstance) ? "enabled" : "disabled");
     aResponse.SetBody(state);
@@ -1198,14 +1200,15 @@ void Resource::GetSrpClientState(Response &aResponse) const
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::SetSrpClientState(const Request &aRequest, Response &aResponse) const 
+void Resource::SetSrpClientState(const Request &aRequest, Response &aResponse) const
 {
     otbrError   error = OTBR_ERROR_NONE;
     std::string errorCode;
     std::string body;
 
     VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
-    if (body == "autostart") {
+    if (body == "autostart")
+    {
         otSrpClientEnableAutoStartMode(mInstance, NULL, NULL);
     }
     else if (body == "disable")
@@ -1232,7 +1235,6 @@ exit:
     }
 }
 
-
 void Resource::SrpClientState(const Request &aRequest, Response &aResponse) const
 {
     std::string errorCode;
@@ -1256,18 +1258,18 @@ void Resource::SrpClientState(const Request &aRequest, Response &aResponse) cons
     }
 }
 
-void Resource::GetSrpClientHost(Response &aResponse) const 
+void Resource::GetSrpClientHost(Response &aResponse) const
 {
-    std::string  state;
-    std::string  errorCode;
-    
+    std::string state;
+    std::string errorCode;
+
     state = Json::HostInfo2JsonString(*otSrpClientGetHostInfo(mInstance));
     aResponse.SetBody(state);
     errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::SetSrpClientHost(const Request &aRequest, Response &aResponse) const 
+void Resource::SetSrpClientHost(const Request &aRequest, Response &aResponse) const
 {
     otbrError     error = OTBR_ERROR_NONE;
     std::string   errorCode;
@@ -1280,37 +1282,35 @@ void Resource::SetSrpClientHost(const Request &aRequest, Response &aResponse) co
     otIp6Address *hostAddressArray;
     uint8_t       arrayLength;
 
-    VerifyOrExit(Json::jsonHostString2Strings(aRequest.GetBody(), name, address),
-        error = OTBR_ERROR_INVALID_ARGS);
+    VerifyOrExit(Json::jsonHostString2Strings(aRequest.GetBody(), name, address), error = OTBR_ERROR_INVALID_ARGS);
 
     hostName = otSrpClientBuffersGetHostNameString(mInstance, &size);
 
     len = name.length();
     VerifyOrExit(len + 1 <= size, error = OTBR_ERROR_INVALID_ARGS);
 
-    
-    if (address == "auto") {
-        VerifyOrExit(otSrpClientEnableAutoHostAddress(mInstance) == OT_ERROR_NONE, 
-            error = OTBR_ERROR_INVALID_STATE);
-    } else {
+    if (address == "auto")
+    {
+        VerifyOrExit(otSrpClientEnableAutoHostAddress(mInstance) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
+    }
+    else
+    {
         hostAddressArray = otSrpClientBuffersGetHostAddressesArray(mInstance, &arrayLength);
-        VerifyOrExit(otIp6AddressFromString(address.c_str(), &hostAddress) == OT_ERROR_NONE, 
-            error = OTBR_ERROR_INVALID_ARGS);
-        VerifyOrExit(otSrpClientSetHostAddresses(mInstance, &hostAddress, 1) == OT_ERROR_NONE, 
-            error = OTBR_ERROR_INVALID_STATE);
+        VerifyOrExit(otIp6AddressFromString(address.c_str(), &hostAddress) == OT_ERROR_NONE,
+                     error = OTBR_ERROR_INVALID_ARGS);
+        VerifyOrExit(otSrpClientSetHostAddresses(mInstance, &hostAddress, 1) == OT_ERROR_NONE,
+                     error = OTBR_ERROR_INVALID_STATE);
 
         memcpy(hostAddressArray, &hostAddress, 1 * sizeof(hostAddressArray[0]));
         otSrpClientSetHostAddresses(mInstance, hostAddressArray, 1);
     }
-
 
     // We first make sure we can set the name, and if so
     // we copy it to the persisted string buffer and set
     // the host name again now with the persisted buffer.
     // This ensures that we do not overwrite a previous
     // buffer with a host name that cannot be set.
-    VerifyOrExit(otSrpClientSetHostName(mInstance, name.c_str()) == OT_ERROR_NONE,
-        error = OTBR_ERROR_INVALID_STATE);
+    VerifyOrExit(otSrpClientSetHostName(mInstance, name.c_str()) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
     memcpy(hostName, name.c_str(), len + 1);
     otSrpClientSetHostName(mInstance, hostName);
 
@@ -1336,14 +1336,14 @@ exit:
     }
 }
 
-void Resource::DeleteSrpClientHost(Response &aResponse) const 
+void Resource::DeleteSrpClientHost(Response &aResponse) const
 {
-    std::string  state;
-    std::string  errorCode;
-    otbrError    error = OTBR_ERROR_NONE;
-    
-    VerifyOrExit(otSrpClientRemoveHostAndServices(mInstance, true, false) == OT_ERROR_NONE, 
-        error = OTBR_ERROR_INVALID_STATE);
+    std::string state;
+    std::string errorCode;
+    otbrError   error = OTBR_ERROR_NONE;
+
+    VerifyOrExit(otSrpClientRemoveHostAndServices(mInstance, true, false) == OT_ERROR_NONE,
+                 error = OTBR_ERROR_INVALID_STATE);
     errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
     aResponse.SetResponsCode(errorCode);
 
@@ -1358,7 +1358,7 @@ exit:
     }
 }
 
-void Resource::SrpClientHost(const Request &aRequest, Response &aResponse) const 
+void Resource::SrpClientHost(const Request &aRequest, Response &aResponse) const
 {
     std::string errorCode;
 
@@ -1384,14 +1384,15 @@ void Resource::SrpClientHost(const Request &aRequest, Response &aResponse) const
     }
 }
 
-void Resource::GetSrpClientServices(Response &aResponse) const 
+void Resource::GetSrpClientServices(Response &aResponse) const
 {
     std::string                     errorCode;
-    const otSrpClientService        *service;
+    const otSrpClientService       *service;
     std::vector<otSrpClientService> services;
     std::string                     servicesJson;
 
-    for (service = otSrpClientGetServices(mInstance); service != nullptr; service = service->mNext) {
+    for (service = otSrpClientGetServices(mInstance); service != nullptr; service = service->mNext)
+    {
         services.push_back(*service);
     }
 
@@ -1401,17 +1402,15 @@ void Resource::GetSrpClientServices(Response &aResponse) const
     aResponse.SetResponsCode(errorCode);
 }
 
-void Resource::AddSrpClientService(const Request &aRequest, Response &aResponse) const 
+void Resource::AddSrpClientService(const Request &aRequest, Response &aResponse) const
 {
-    otbrError                      error = OTBR_ERROR_NONE;
-    std::string                    errorCode;
+    otbrError                       error = OTBR_ERROR_NONE;
+    std::string                     errorCode;
     otSrpClientBuffersServiceEntry *entry;
 
-    
     entry = otSrpClientBuffersAllocateService(mInstance);
     VerifyOrExit(entry != nullptr, error = OTBR_ERROR_ERRNO);
-    VerifyOrExit(Json::JsonServiceString2ServiceEntry(aRequest.GetBody(), entry),
-        error = OTBR_ERROR_INVALID_ARGS);
+    VerifyOrExit(Json::JsonServiceString2ServiceEntry(aRequest.GetBody(), entry), error = OTBR_ERROR_INVALID_ARGS);
 
     VerifyOrExit(otSrpClientAddService(mInstance, &entry->mService) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
 
@@ -1439,25 +1438,24 @@ exit:
     }
 }
 
-void Resource::DeleteSrpClientService(const Request &aRequest, Response &aResponse) const 
+void Resource::DeleteSrpClientService(const Request &aRequest, Response &aResponse) const
 {
-    otbrError                      error = OTBR_ERROR_NONE;
-    std::string                    errorCode;
-    std::string                    serviceName;
-    std::string                    instanceName;
-    const otSrpClientService       *service;
+    otbrError                 error = OTBR_ERROR_NONE;
+    std::string               errorCode;
+    std::string               serviceName;
+    std::string               instanceName;
+    const otSrpClientService *service;
 
-
-    
     VerifyOrExit(Json::JsonServiceString2NameStrings(aRequest.GetBody(), serviceName, instanceName),
-        error = OTBR_ERROR_INVALID_ARGS);
-    
+                 error = OTBR_ERROR_INVALID_ARGS);
+
     for (service = otSrpClientGetServices(mInstance); service != nullptr; service = service->mNext)
     {
         if ((instanceName == service->mInstanceName) && (serviceName == service->mName))
         {
-            VerifyOrExit(otSrpClientRemoveService(mInstance, const_cast<otSrpClientService *>(service)) == OT_ERROR_NONE, 
-                error = OTBR_ERROR_INVALID_STATE);
+            VerifyOrExit(otSrpClientRemoveService(mInstance, const_cast<otSrpClientService *>(service)) ==
+                             OT_ERROR_NONE,
+                         error = OTBR_ERROR_INVALID_STATE);
             break;
         }
     }
@@ -1530,7 +1528,6 @@ void Resource::DeleteOutDatedDiagnostic(void)
         }
     }
 }
-
 
 void Resource::UpdateDiag(std::string aKey, std::vector<otNetworkDiagTlv> &aDiag)
 {

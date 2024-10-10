@@ -149,5 +149,4 @@ std::string GetSrpClientItemStateName(otSrpClientItemState aState)
     }
 
     return stateName;
-
 }
