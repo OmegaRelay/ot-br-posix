@@ -1094,7 +1094,7 @@ exit:
     return ret;
 }
 
-cJSON *JoinerTable2Json(const std::vector<otJoinerInfo> &aJoinerTable)
+cJSON *JoinerTable2Json(const std::vector<otJoinerInfo> &aJoinerTable) 
 {
     cJSON *table = cJSON_CreateArray();
     for (const otJoinerInfo joiner : aJoinerTable)
@@ -1106,9 +1106,56 @@ cJSON *JoinerTable2Json(const std::vector<otJoinerInfo> &aJoinerTable)
     return table;
 }
 
-std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable)
+std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable) 
 {
     return Json2String(JoinerTable2Json(aJoinerTable));
+}
+
+bool JsonHost2Strings(const cJSON *aJsonHost, std::string &aHostName, std::string &aHostAddress)
+{
+    cJSON      *value;
+    bool        ret = true;
+
+    value = cJSON_GetObjectItemCaseSensitive(aJsonHost, "Name");
+    if (cJSON_IsString(value))
+    {
+        VerifyOrExit(value->valuestring != nullptr, ret = false);
+        aHostName = value->valuestring;
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+    value = cJSON_GetObjectItemCaseSensitive(aJsonHost, "Address");
+    if (cJSON_IsString(value))
+    {
+        VerifyOrExit(value->valuestring != nullptr, ret = false);
+        aHostAddress = value->valuestring;
+    }
+    else
+    {
+        ExitNow(ret = false);
+    } 
+
+exit:
+    return ret;
+}
+
+bool jsonHostString2Strings(const std::string &aJsonHost, std::string &aHostName, std::string &aHostAddress)
+{
+    cJSON *jsonHost;
+    bool   ret = true;
+
+    VerifyOrExit((jsonHost = cJSON_Parse(aJsonHost.c_str())) != nullptr, ret = false);
+    VerifyOrExit(cJSON_IsObject(jsonHost), ret = false);
+
+    ret = JsonHost2Strings(jsonHost, aHostName, aHostAddress);
+
+exit:
+    cJSON_Delete(jsonHost);
+
+    return ret;
 }
 
 cJSON *Service2Json(const otSrpClientService &aService)
