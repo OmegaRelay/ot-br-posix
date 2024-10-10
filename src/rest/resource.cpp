@@ -30,7 +30,9 @@
 
 #include "rest/resource.hpp"
 #include <openthread/commissioner.h>
+#if OTBR_ENABLE_SRP_ADVERTISING_PROXY
 #include <openthread/srp_server.h>
+#endif // OTBR_ENABLE_SRP_ADVERTISING_PROXY
 #include <openthread/srp_client.h>
 #include <openthread/srp_client_buffers.h>
 
@@ -156,9 +158,9 @@ Resource::Resource(RcpHost *aHost)
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_JOINER, &Resource::CommissionerJoiner);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_COMMISSIONER_STATE, &Resource::CommissionerState);
-    #if OT_SRP_SERVER // SRP server is not forced on
+    #ifdef OTBR_ENABLE_SRP_ADVERTISING_PROXY // SRP server is not forced on
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_SERVER_STATE, &Resource::SrpServerState);
-    #endif // OT_SRP_SERVER
+    #endif // OTBR_ENABLE_SRP_ADVERTISING_PROXY
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_STATE, &Resource::SrpClientState);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_HOST, &Resource::SrpClientHost);
     mResourceMap.emplace(OT_REST_RESOURCE_PATH_NODE_SRP_CLIENT_SERVICE, &Resource::SrpClientService);
@@ -1076,7 +1078,7 @@ void Resource::CommissionerJoiner(const Request &aRequest, Response &aResponse) 
     }
 }
 
-#if OT_SRP_SERVER
+#if OTBR_ENABLE_SRP_ADVERTISING_PROXY
 void Resource::GetSrpServerState(Response &aResponse) const 
 {
     std::string  state;
@@ -1149,7 +1151,7 @@ void Resource::SrpServerState(const Request &aRequest, Response &aResponse) cons
         break;
     }
 }
-#endif // OT_SRP_SERVER
+#endif // OTBR_ENABLE_SRP_ADVERTISING_PROXY
 
 void Resource::GetSrpClientState(Response &aResponse) const 
 {
