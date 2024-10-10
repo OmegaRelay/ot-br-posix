@@ -29,9 +29,9 @@
 #include "rest/json.hpp"
 #include <sstream>
 
+#include "common/api_strings.hpp"
 #include "common/code_utils.hpp"
 #include "common/types.hpp"
-#include "common/api_strings.hpp"
 
 extern "C" {
 #include <cJSON.h>
@@ -1096,7 +1096,7 @@ exit:
     return ret;
 }
 
-cJSON *JoinerTable2Json(const std::vector<otJoinerInfo> &aJoinerTable) 
+cJSON *JoinerTable2Json(const std::vector<otJoinerInfo> &aJoinerTable)
 {
     cJSON *table = cJSON_CreateArray();
     for (const otJoinerInfo joiner : aJoinerTable)
@@ -1108,15 +1108,15 @@ cJSON *JoinerTable2Json(const std::vector<otJoinerInfo> &aJoinerTable)
     return table;
 }
 
-std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable) 
+std::string JoinerTable2JsonString(const std::vector<otJoinerInfo> &aJoinerTable)
 {
     return Json2String(JoinerTable2Json(aJoinerTable));
 }
 
 bool JsonHost2Strings(const cJSON *aJsonHost, std::string &aHostName, std::string &aHostAddress)
 {
-    cJSON      *value;
-    bool        ret = true;
+    cJSON *value;
+    bool   ret = true;
 
     value = cJSON_GetObjectItemCaseSensitive(aJsonHost, "Name");
     if (cJSON_IsString(value))
@@ -1127,7 +1127,7 @@ bool JsonHost2Strings(const cJSON *aJsonHost, std::string &aHostName, std::strin
     else
     {
         ExitNow(ret = false);
-    } 
+    }
 
     value = cJSON_GetObjectItemCaseSensitive(aJsonHost, "Address");
     if (cJSON_IsString(value))
@@ -1138,7 +1138,7 @@ bool JsonHost2Strings(const cJSON *aJsonHost, std::string &aHostName, std::strin
     else
     {
         ExitNow(ret = false);
-    } 
+    }
 
 exit:
     return ret;
@@ -1180,10 +1180,10 @@ cJSON *Service2Json(const otSrpClientService &aService)
 
 bool JsonService2Service(const cJSON *aJsonService, otSrpClientBuffersServiceEntry *aServiceEntry)
 {
-    cJSON      *value;
-    bool        ret = true;
-    uint16_t    size;
-    char       *string;
+    cJSON   *value;
+    bool     ret = true;
+    uint16_t size;
+    char    *string;
 
     value = cJSON_GetObjectItemCaseSensitive(aJsonService, "Name");
     if (cJSON_IsString(value))
@@ -1196,7 +1196,7 @@ bool JsonService2Service(const cJSON *aJsonService, otSrpClientBuffersServiceEnt
     else
     {
         ExitNow(ret = false);
-    } 
+    }
 
     value = cJSON_GetObjectItemCaseSensitive(aJsonService, "InstanceName");
     if (cJSON_IsString(value))
@@ -1209,7 +1209,7 @@ bool JsonService2Service(const cJSON *aJsonService, otSrpClientBuffersServiceEnt
     else
     {
         ExitNow(ret = false);
-    } 
+    }
 
     value = cJSON_GetObjectItemCaseSensitive(aJsonService, "Port");
     if (cJSON_IsNumber(value))
@@ -1219,7 +1219,7 @@ bool JsonService2Service(const cJSON *aJsonService, otSrpClientBuffersServiceEnt
     else
     {
         ExitNow(ret = false);
-    } 
+    }
 
 exit:
     return ret;
@@ -1241,11 +1241,13 @@ exit:
     return ret;
 }
 
-bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string &aServiceName, std::string &aInstanceName) 
+bool JsonServiceString2NameStrings(const std::string &aJsonService,
+                                   std::string       &aServiceName,
+                                   std::string       &aInstanceName)
 {
     cJSON *jsonService;
     bool   ret = true;
-    cJSON      *value;
+    cJSON *value;
 
     VerifyOrExit((jsonService = cJSON_Parse(aJsonService.c_str())) != nullptr, ret = false);
     VerifyOrExit(cJSON_IsObject(jsonService), ret = false);
@@ -1260,7 +1262,7 @@ bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string 
     else
     {
         ExitNow(ret = false);
-    } 
+    }
 
     value = cJSON_GetObjectItemCaseSensitive(jsonService, "InstanceName");
     if (cJSON_IsString(value))
@@ -1272,8 +1274,7 @@ bool JsonServiceString2NameStrings(const std::string &aJsonService, std::string 
     else
     {
         ExitNow(ret = false);
-    } 
-
+    }
 
 exit:
     cJSON_Delete(jsonService);
@@ -1281,10 +1282,11 @@ exit:
     return ret;
 }
 
-cJSON *Services2Json(const std::vector<otSrpClientService> &aServices) 
+cJSON *Services2Json(const std::vector<otSrpClientService> &aServices)
 {
     cJSON *list = cJSON_CreateArray();
-    for (const otSrpClientService service : aServices) {
+    for (const otSrpClientService service : aServices)
+    {
         cJSON *serviceJson = Service2Json(service);
         cJSON_AddItemToArray(list, serviceJson);
     }
@@ -1292,24 +1294,28 @@ cJSON *Services2Json(const std::vector<otSrpClientService> &aServices)
     return list;
 }
 
-std::string Services2JsonString(const std::vector<otSrpClientService> &aServices) 
+std::string Services2JsonString(const std::vector<otSrpClientService> &aServices)
 {
     return Json2String(Services2Json(aServices));
 }
 
-cJSON *HostInfo2Json(const otSrpClientHostInfo &aHostInfo) 
+cJSON *HostInfo2Json(const otSrpClientHostInfo &aHostInfo)
 {
     cJSON *node = cJSON_CreateObject();
 
-    if (aHostInfo.mName == NULL) {
+    if (aHostInfo.mName == NULL)
+    {
         cJSON_AddItemToObject(node, "Name", cJSON_CreateString(""));
-    } else {
+    }
+    else
+    {
         cJSON_AddItemToObject(node, "Name", cJSON_CreateString(aHostInfo.mName));
     }
     cJSON_AddItemToObject(node, "State", cJSON_CreateString(GetSrpClientItemStateName(aHostInfo.mState).c_str()));
-    
+
     cJSON *addressNode = cJSON_CreateArray();
-    for (uint8_t i = 0; i < aHostInfo.mNumAddresses; i++) {
+    for (uint8_t i = 0; i < aHostInfo.mNumAddresses; i++)
+    {
         char string[OT_IP6_ADDRESS_STRING_SIZE];
         otIp6AddressToString(&aHostInfo.mAddresses[i], string, OT_IP6_ADDRESS_STRING_SIZE);
         cJSON_AddItemToArray(addressNode, cJSON_CreateString(string));
@@ -1322,7 +1328,6 @@ cJSON *HostInfo2Json(const otSrpClientHostInfo &aHostInfo)
 std::string HostInfo2JsonString(const otSrpClientHostInfo &aHostInfo)
 {
     return Json2String(HostInfo2Json(aHostInfo));
-
 }
 
 } // namespace Json
