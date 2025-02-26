@@ -147,6 +147,7 @@ private:
     void DeleteNodeInfo(Response &aResponse) const;
     void GetDataBaId(Response &aResponse) const;
     void GetDataExtendedAddr(Response &aResponse) const;
+    void SetDataExtendedAddr(const Request &aRequest, Response &aResponse) const;
     void GetDataState(Response &aResponse) const;
     void SetDataState(const Request &aRequest, Response &aResponse) const;
     void GetDataNetworkName(Response &aResponse) const;

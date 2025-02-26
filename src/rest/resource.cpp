@@ -376,17 +376,61 @@ void Resource::GetDataExtendedAddr(Response &aResponse) const
     aResponse.SetResponsCode(errorCode);
 }
 
+void Resource::SetDataExtendedAddr(const Request &aRequest, Response &aResponse) const
+{
+    otbrError    error = OTBR_ERROR_NONE;
+    std::string  errorCode;
+    otExtAddress extAddress;
+    std::string  body;
+    int          ret;
+
+    VerifyOrExit(Json::JsonString2String(aRequest.GetBody(), body), error = OTBR_ERROR_INVALID_ARGS);
+
+    ret = Json::Hex2BytesJsonString(body, extAddress.m8, sizeof(extAddress));
+    VerifyOrExit(ret == OT_EXT_ADDRESS_SIZE || ret == 0, error = OTBR_ERROR_INVALID_ARGS);
+    if (ret == 0)
+    {
+        otLinkGetFactoryAssignedIeeeEui64(mInstance, &extAddress);
+    }
+    VerifyOrExit(otLinkSetExtendedAddress(mInstance, &extAddress) == OT_ERROR_NONE, error = OTBR_ERROR_INVALID_STATE);
+    errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+    aResponse.SetResponsCode(errorCode);
+
+exit:
+    if (error == OTBR_ERROR_INVALID_STATE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusConflict);
+    }
+    else if (error == OTBR_ERROR_INVALID_ARGS)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusBadRequest);
+    }
+    else if (error != OTBR_ERROR_NONE)
+    {
+        ErrorHandler(aResponse, HttpStatusCode::kStatusInternalServerError);
+    }
+}
+
 void Resource::ExtendedAddr(const Request &aRequest, Response &aResponse) const
 {
     std::string errorCode;
 
-    if (aRequest.GetMethod() == HttpMethod::kGet)
+    switch (aRequest.GetMethod())
     {
+    case HttpMethod::kGet:
         GetDataExtendedAddr(aResponse);
-    }
-    else
-    {
+        break;
+    case HttpMethod::kPut:
+        SetDataExtendedAddr(aRequest, aResponse);
+        break;
+    case HttpMethod::kOptions:
+        errorCode = GetHttpStatus(HttpStatusCode::kStatusOk);
+        aResponse.SetResponsCode(errorCode);
+        aResponse.SetComplete();
+        break;
+    default:
         ErrorHandler(aResponse, HttpStatusCode::kStatusMethodNotAllowed);
+        break;
     }
 }
 

@@ -109,6 +109,19 @@ paths:
                 type: string
                 description: 8-byte IEEE 802.15.4 Extended Address of this node as hex string.
                 example: "C21F906BE0352A4C"
+    put:
+      tags:
+        - node
+      summary: Set the IEEE 802.15.4 Extended Address (EUI-64) of the device.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+                description: 8-byte IEEE 802.15.4 Extended Address of this node as hex string or empty to reset to factory default.
+                example: "C21F906BE0352A4C"
   /node/state:
     get:
       tags:
